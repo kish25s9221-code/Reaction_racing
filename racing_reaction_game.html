@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>레이싱 반응속도 게임</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #111;
+      color: white;
+      text-align: center;
+      user-select: none;
+    }
+    .hidden { display: none; }
+
+    #lights {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .light {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #333;
+    }
+    .light.red { background: red; }
+    .light.green { background: limegreen; }
+
+    #car {
+      font-size: 50px;
+      margin: 20px 0;
+    }
+    #records {
+      margin-top: 15px;
+      font-size: 14px;
+      text-align: left;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background: #ff3b30;
+      color: white;
+    }
+    button:active {
+      background: #ff5e57;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 시작 화면 -->
+  <div id="startScreen">
+    <h1>🏁 레이싱 반응속도 게임</h1>
+    <div id="car">🚗</div>
+    <button onclick="startGame()">게임 시작</button>
+  </div>
+
+  <!-- 카운트다운 화면 -->
+  <div id="countdownScreen" class="hidden">
+    <h2>준비하세요!</h2>
+    <div id="lights">
+      <div class="light"></div>
+      <div class="light"></div>
+      <div class="light"></div>
+      <div class="light"></div>
+      <div class="light"></div>
+    </div>
+    <p>초록불이 켜지면 화면을 터치하세요</p>
+  </div>
+
+  <!-- 결과 화면 -->
+  <div id="resultScreen" class="hidden">
+    <h2 id="resultText"></h2>
+    <div id="records"></div>
+    <button onclick="resetGame()">확인</button>
+  </div>
+
+  <script>
+    let startTime, reactionTime;
+    let topRecords = JSON.parse(localStorage.getItem("records")) || [];
+
+    const startScreen = document.getElementById("startScreen");
+    const countdownScreen = document.getElementById("countdownScreen");
+    const resultScreen = document.getElementById("resultScreen");
+    const lights = document.querySelectorAll(".light");
+    const resultText = document.getElementById("resultText");
+    const recordsDiv = document.getElementById("records");
+
+    function startGame() {
+      startScreen.classList.add("hidden");
+      resultScreen.classList.add("hidden");
+      countdownScreen.classList.remove("hidden");
+
+      lights.forEach(light => light.classList.remove("red", "green"));
+
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i < 5) {
+          lights[i].classList.add("red");
+          i++;
+        } else {
+          clearInterval(interval);
+          const randomDelay = Math.random() * 2500 + 500; // 0.5~3초
+          setTimeout(() => {
+            lights.forEach(light => light.classList.remove("red"));
+            lights.forEach(light => light.classList.add("green"));
+            startTime = Date.now();
+
+            document.body.addEventListener("touchstart", onTouch, { once: true });
+          }, randomDelay);
+        }
+      }, 1000);
+    }
+
+    function onTouch() {
+      reactionTime = (Date.now() - startTime) / 1000;
+      showResult();
+    }
+
+    function showResult() {
+      countdownScreen.classList.add("hidden");
+      resultScreen.classList.remove("hidden");
+
+      resultText.textContent = `당신의 기록: ${reactionTime.toFixed(3)}초`;
+
+      topRecords.push(reactionTime);
+      topRecords.sort((a, b) => a - b);
+      topRecords = topRecords.slice(0, 5);
+
+      localStorage.setItem("records", JSON.stringify(topRecords));
+
+      recordsDiv.innerHTML = "<h3>🏆 역대 기록</h3>" +
+        topRecords.map((t, i) => `${i+1}등: ${t.toFixed(3)}초`).join("<br>");
+    }
+
+    function resetGame() {
+      resultScreen.classList.add("hidden");
+      startScreen.classList.remove("hidden");
+    }
+  </script>
+</body>
+</html>
